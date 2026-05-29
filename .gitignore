@@ -1,0 +1,42 @@
+# Built application files
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Gradle
+*.iml
+.gradle
+**/build/
+/build
+
+# Android Studio / IntelliJ IDEA
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.idea/
+
+# Local configuration (do not commit)
+/local.properties
+local.properties
+
+# Keystore and signing files
+*.jks
+*.keystore
+
+# Google Services API keys
+google-services.json
+
+# NDK / CMake
+.externalNativeBuild
+.cxx
+obj/
+
+# Output
+/captures
+
+# macOS
+.DS_Store
