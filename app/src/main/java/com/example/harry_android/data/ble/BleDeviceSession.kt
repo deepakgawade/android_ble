@@ -84,25 +84,34 @@ private val encoder: GattEncoder,
     ///---------- Notification --------
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
-    suspend fun startNotifications() = withContext(dispatchers.io){
+    suspend fun startNotifications() = setNotifications(enable = true)
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
+    suspend fun stopNotifications() = setNotifications(enable = false)
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @androidx.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
+    private suspend fun setNotifications(enable: Boolean) = withContext(dispatchers.io) {
         servicesDiscovered.await()
 
         val g = gatt ?: return@withContext
+        val cccdValue = if (enable) BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                        else BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
 
-        listOf(GattUuid.TEMPERATURE, GattUuid.HUMIDITY).forEach { uUID -> g.getCharacteristic(
-            GattUuid.SENSOR_SERVICE, uUID)?.let  { characteristic ->  g.setCharacteristicNotification(characteristic, true)
-            characteristic.getDescriptor(GattUuid.CCCD)?.let { cccd ->
-
-                g.writeDescriptor(cccd,BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE ) // we must check for the os version before running this
-            }} }
-        g.getCharacteristic(GattUuid.SENSOR_SERVICE, GattUuid.CONTROL)?.let{ctrl ->
-
-            g.writeCharacteristic(ctrl, encoder.encodeControl(start = true),
+        listOf(GattUuid.TEMPERATURE, GattUuid.HUMIDITY).forEach { uuid ->
+            g.getCharacteristic(GattUuid.SENSOR_SERVICE, uuid)?.let { characteristic ->
+                g.setCharacteristicNotification(characteristic, enable)
+                characteristic.getDescriptor(GattUuid.CCCD)?.let { cccd ->
+                    g.writeDescriptor(cccd, cccdValue)
+                }
+            }
+        }
+        g.getCharacteristic(GattUuid.SENSOR_SERVICE, GattUuid.CONTROL)?.let { ctrl ->
+            g.writeCharacteristic(ctrl, encoder.encodeControl(start = enable),
                 BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
         }
-
     }
-
 
     ///-----------------Read/ Write---------------
     /**
