@@ -1,5 +1,6 @@
 package com.example.harry_android.data.repository
 
+import android.util.Log
 import com.example.harry_android.data.ble.BleSessionManager
 import com.example.harry_android.data.ble.GattDecoder
 import com.example.harry_android.data.ble.GattUuid
@@ -12,6 +13,8 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.mapNotNull
+
+private const val TAG = "HarrySensor"
 
 class SensorRepositoryImpl @AssistedInject constructor(
     private val sessionManager: BleSessionManager,
@@ -27,14 +30,24 @@ class SensorRepositoryImpl @AssistedInject constructor(
 
         return session.notificationChannel.mapNotNull { notification ->
             when (notification.uuid) {
-                GattUuid.TEMPERATURE -> latestTemp = decoder.decodeTemperature(notification.bytes)
-                GattUuid.HUMIDITY -> latestHumidity = decoder.decodeHumidity(notification.bytes)
+                GattUuid.TEMPERATURE -> {
+                    val temp = decoder.decodeTemperature(notification.bytes)
+                    Log.d(TAG, "Temperature decoded: $temp °C")
+                    latestTemp = temp
+                }
+                GattUuid.HUMIDITY -> {
+                    val humidity = decoder.decodeHumidity(notification.bytes)
+                    Log.d(TAG, "Humidity decoded: $humidity %RH")
+                    latestHumidity = humidity
+                }
             }
 
             val t = latestTemp ?: return@mapNotNull null
             val h = latestHumidity ?: return@mapNotNull null
 
-            SensorReading(t, h, System.currentTimeMillis())
+            val reading = SensorReading(t, h, System.currentTimeMillis())
+            Log.i(TAG, "SensorReading emitted: temp=${reading.temperature}°C  humidity=${reading.humidity}%RH")
+            reading
         }.distinctUntilChanged()
     }
 

@@ -1,0 +1,121 @@
+@startuml
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+
+title Harry Android — Sensor Notification Data Flow
+
+actor User
+participant "SensorScreen\n(Compose UI)" as UI
+participant "SensorViewModel" as VM
+participant "ControlNotification\nUseCase" as CUC
+participant "ObserveSensorData\nUseCase" as OUC
+participant "BleRepositoryImpl" as BLEREPO
+participant "SensorRepositoryImpl" as SENSORREPO
+participant "BleDeviceSession\n(GATT layer)" as SESSION
+participant "BleDevice\n(Hardware)" as DEVICE
+
+== Auto-connect on screen open ==
+
+VM -> BLEREPO : connect(deviceAddress)
+BLEREPO -> SESSION : session.connect()
+SESSION -> DEVICE : connectGatt()
+DEVICE --> SESSION : onConnectionStateChange(CONNECTED)
+SESSION -> SESSION : servicesDiscovered = new\nCompletableDeferred()
+SESSION -> DEVICE : discoverServices()
+DEVICE --> SESSION : onServicesDiscovered(SUCCESS)
+SESSION -> SESSION : servicesDiscovered.complete()
+SESSION --> BLEREPO : connectionState = BleState.Connected
+BLEREPO --> VM : connectionState flow emits Connected
+VM -> VM : startObserving() [auto-triggered]
+
+== Start Notifications ==
+
+User -> UI : tap "Start"
+UI -> VM : startNotification()
+VM -> VM : startObserving()\nlaunch coroutine on IO
+
+VM -> OUC : observeSensorData()\nreturns cold Flow
+note right of OUC : Flow not active yet —\nwait for .onStart{}
+
+VM -> VM : .onStart{} fires\nbefore first emission
+VM -> CUC : controlNotifications.start()
+CUC -> BLEREPO : startNotifications()
+BLEREPO -> SESSION : session.startNotifications()\n→ setNotifications(enable=true)
+
+SESSION -> SESSION : servicesDiscovered.await()
+
+group Serialized GATT writes (each step awaits callback)
+
+  SESSION -> DEVICE : setCharacteristicNotification\n(TEMPERATURE, true)
+  SESSION -> DEVICE : writeDescriptor\n(TEMPERATURE CCCD, [01 00])
+  DEVICE --> SESSION : onDescriptorWrite(TEMPERATURE CCCD, SUCCESS)
+  SESSION -> SESSION : pendingWrite.complete(true)
+
+  SESSION -> DEVICE : setCharacteristicNotification\n(HUMIDITY, true)
+  SESSION -> DEVICE : writeDescriptor\n(HUMIDITY CCCD, [01 00])
+  DEVICE --> SESSION : onDescriptorWrite(HUMIDITY CCCD, SUCCESS)
+  SESSION -> SESSION : pendingWrite.complete(true)
+
+  SESSION -> DEVICE : writeCharacteristic\n(CONTROL, [01 00])
+  DEVICE --> SESSION : onCharacteristicWrite(CONTROL, SUCCESS)
+  SESSION -> SESSION : pendingWrite.complete(true)
+
+end
+
+CUC --> VM : start() returns\nFlow collection begins
+VM -> VM : _uiState: isNotifying = true
+VM --> UI : uiState emits\nisNotifying = true
+UI --> User : shows "Stop" button +\n"Receiving data every 2s"
+
+== Sensor Data Flow (repeats every ~2s) ==
+
+DEVICE -> SESSION : onCharacteristicChanged\n(TEMPERATURE, [EB 00])
+SESSION -> SESSION : notificationChannel\n.tryEmit(uuid=TEMPERATURE, bytes)
+SESSION --> SENSORREPO : Flow emission:\nGattNotification(TEMPERATURE, [EB 00])
+SENSORREPO -> SENSORREPO : decodeTemperature([EB 00])\nint16 LE → 235 / 10.0 = 23.5 °C\nlatestTemp = 23.5
+
+DEVICE -> SESSION : onCharacteristicChanged\n(HUMIDITY, [26 02])
+SESSION -> SESSION : notificationChannel\n.tryEmit(uuid=HUMIDITY, bytes)
+SESSION --> SENSORREPO : Flow emission:\nGattNotification(HUMIDITY, [26 02])
+SENSORREPO -> SENSORREPO : decodeHumidity([26 02])\nuint16 LE → 550 / 10.0 = 55.0 %RH\nlatestHumidity = 55.0
+
+note over SENSORREPO : Both values present →\nemit SensorReading
+
+SENSORREPO -> OUC : emit SensorReading\n(temp=23.5, humidity=55.0, timestamp)
+OUC -> VM : Flow emits SensorReading
+VM -> VM : _uiState.update:\nreading = SensorReading\nisLoading = false
+VM --> UI : uiState emits\nnew reading
+UI --> User : Temperature: 23.5 °C\nHumidity: 55.0 %RH
+
+== Stop Notifications ==
+
+User -> UI : tap "Stop"
+UI -> VM : stopNotifications()
+VM -> VM : startSensorJob.cancel()\nFlow collection stops
+VM -> CUC : controlNotifications.stop()
+CUC -> BLEREPO : stopNotifications()
+BLEREPO -> SESSION : session.stopNotifications()\n→ setNotifications(enable=false)
+
+group Serialized GATT writes
+
+  SESSION -> DEVICE : writeDescriptor\n(TEMPERATURE CCCD, [00 00])
+  DEVICE --> SESSION : onDescriptorWrite(SUCCESS)
+  SESSION -> SESSION : pendingWrite.complete(true)
+
+  SESSION -> DEVICE : writeDescriptor\n(HUMIDITY CCCD, [00 00])
+  DEVICE --> SESSION : onDescriptorWrite(SUCCESS)
+  SESSION -> SESSION : pendingWrite.complete(true)
+
+  SESSION -> DEVICE : writeCharacteristic\n(CONTROL, [00 00])
+  DEVICE --> SESSION : onCharacteristicWrite(SUCCESS)
+  SESSION -> SESSION : pendingWrite.complete(true)
+
+end
+
+VM -> VM : _uiState: isNotifying = false
+VM --> UI : uiState emits\nisNotifying = false
+UI --> User : shows "Start" button +\n"Notifications stopped"
+
+@enduml
