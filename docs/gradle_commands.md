@@ -57,6 +57,46 @@ Append to any command:
 | `--offline` | Use cached dependencies, no network |
 | `--build-cache` | Enable build cache for faster incremental builds |
 
+## Finding Dependencies
+
+### Where to look
+
+| Source | URL | What lives here |
+|--------|-----|-----------------|
+| **Google Maven** | `maven.google.com` | Android/Jetpack libs (Hilt, Compose, AndroidX) |
+| **Maven Central** | `central.sonatype.com` | Everything else (Retrofit, OkHttp, Kotlin libs) |
+| **Library's GitHub README** | varies | Exact copy-paste setup instructions |
+
+### Key library docs
+
+| Library | Reference |
+|---------|-----------|
+| Retrofit | `github.com/square/retrofit` |
+| OkHttp | `square.github.io/okhttp` |
+| Kotlin Serialization | `github.com/Kotlin/kotlinx.serialization` |
+| Hilt | `developer.android.com/training/dependency-injection/hilt-android` |
+
+### How to read a dependency string
+
+When a library's README shows:
+```
+implementation("com.squareup.retrofit2:retrofit:2.11.0")
+```
+The three parts map to `libs.versions.toml` like this:
+```
+group   = "com.squareup.retrofit2"   ← everything before the first :
+name    = "retrofit"                 ← between the colons
+version = "2.11.0"                   ← after the last :
+```
+
+### Kotlin Serialization — two separate versions
+
+It has two parts with independent version numbers:
+- **Plugin** version → always matches your Kotlin version (reuse `version.ref = "kotlin"`)
+- **Library** (`kotlinx-serialization-json`) version → find latest at `github.com/Kotlin/kotlinx.serialization/releases`
+
+---
+
 ## Notes
 
 - Pattern: `./gradlew :<module>:<task><Variant>` — swap `:app` for `:feature:login` etc. in multi-module projects.

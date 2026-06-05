@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.getValue
@@ -22,7 +24,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.harry_android.ui.book.BookScreen
 import com.example.harry_android.ui.common.BlePermissionHandler
+import com.example.harry_android.ui.common.MenuScreen
 import com.example.harry_android.ui.connection.BleConnectionViewModel
 import com.example.harry_android.ui.connection.ScanBottomSheet
 import com.example.harry_android.ui.sensor.SensorScreen
@@ -37,46 +41,62 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Harry_androidTheme {
-                BlePermissionHandler(onPermissionsGranted = {})
 
-                val navController = rememberNavController()
+                    BlePermissionHandler(onPermissionsGranted = {})
 
-                NavHost(navController = navController, startDestination = "home") {
-                    composable("home") {
-                        val viewModel: BleConnectionViewModel = hiltViewModel()
-                        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-                        var showSheet by rememberSaveable { mutableStateOf(false) }
+                    val navController = rememberNavController()
 
-                        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(innerPadding),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Button(onClick = { showSheet = true }) {
-                                    Text("Scan for Devices")
+                    Box(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        NavHost(navController = navController, startDestination = "menu") {
+                            composable("home") {
+                                val viewModel: BleConnectionViewModel = hiltViewModel()
+                                val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                                var showSheet by rememberSaveable { mutableStateOf(false) }
+
+                                Scaffold(
+                                    modifier = Modifier.fillMaxSize()
+                                ) { innerPadding ->
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(innerPadding),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Button(onClick = { showSheet = true }) {
+                                            Text("Scan for Devices")
+                                        }
+                                    }
+
+                                    if (showSheet) {
+                                        ScanBottomSheet(
+                                            sheetState = sheetState,
+                                            onDismiss = { showSheet = false },
+                                            onConnect = { address ->
+                                                showSheet = false
+                                                navController.navigate("sensor/$address")
+                                            },
+                                            viewModel = viewModel
+                                        )
+                                    }
                                 }
                             }
-
-                            if (showSheet) {
-                                ScanBottomSheet(
-                                    sheetState = sheetState,
-                                    onDismiss = { showSheet = false },
-                                    onConnect = { address ->
-                                        showSheet = false
-                                        navController.navigate("sensor/$address")
-                                    },
-                                    viewModel = viewModel
+                            composable(route = "menu") {
+                                MenuScreen(
+                                    onNavigationToBook = { navController.navigate("book") },
+                                    onNavigationToHome = { navController.navigate("home") }
                                 )
+                            }
+                            composable(route = "book") {
+                                BookScreen()
+                            }
+                            composable("sensor/{deviceAddress}") {
+                                SensorScreen(navController = navController)
                             }
                         }
                     }
 
-                    composable("sensor/{deviceAddress}") {
-                        SensorScreen(navController = navController)
-                    }
-                }
             }
         }
     }

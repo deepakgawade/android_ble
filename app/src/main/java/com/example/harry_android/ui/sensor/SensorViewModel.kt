@@ -1,5 +1,6 @@
 package com.example.harry_android.ui.sensor
 
+import android.annotation.SuppressLint
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -31,6 +32,7 @@ data class SensorUiState(
     val connectionState: BleState = BleState.Idle
 )
 
+@SuppressLint("MissingPermission")
 @HiltViewModel
 class SensorViewModel @Inject constructor(
     private val sensorRepoFactory: SensorRepositoryImpl.Factory,
@@ -53,7 +55,7 @@ class SensorViewModel @Inject constructor(
     private var startSensorJob: Job? = null
 
     init {
-        viewModelScope.launch(dispatchers.io) {
+        viewModelScope.launch(dispatchers.io)  {
             bleRepo.connect(deviceAddress)
         }
         viewModelScope.launch {

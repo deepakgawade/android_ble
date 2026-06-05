@@ -65,9 +65,8 @@ fun SensorScreen(
                         state = uiState.connectionState,
                         modifier = Modifier.padding(end = 8.dp)
                     )
-                }
+                },
             )
-
         }
     ) { paddingValues ->
         LazyColumn(
