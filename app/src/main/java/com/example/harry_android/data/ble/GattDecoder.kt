@@ -34,3 +34,10 @@ class GattDecoder {
      */
     fun decodeString(bytes: ByteArray): String =String(bytes, Charsets.UTF_8)
 }
+
+fun ByteArray.decodeTemperature(): Double{
+    require(size>=2){"Temperature requires 2 bytes, got $size"}
+    val raw = (this[0].toInt() and 0xff) or (this[1].toInt() shl 8)
+    return  raw.toShort()/10.0
+
+}

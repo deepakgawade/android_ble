@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.harry_android.data.ble.BleSessionManager
 import com.example.harry_android.data.ble.GattDecoder
 import com.example.harry_android.data.ble.GattUuid
+import com.example.harry_android.data.ble.decodeTemperature
 import com.example.harry_android.domain.model.DeviceInfo
 import com.example.harry_android.domain.model.SensorReading
 import com.example.harry_android.domain.repository.ISensorRepository
@@ -31,7 +32,8 @@ class SensorRepositoryImpl @AssistedInject constructor(
         return session.notificationChannel.mapNotNull { notification ->
             when (notification.uuid) {
                 GattUuid.TEMPERATURE -> {
-                    val temp = decoder.decodeTemperature(notification.bytes)
+                    //val temp = decoder.decodeTemperature(notification.bytes)
+                    val temp = notification.bytes.decodeTemperature()
                     Log.d(TAG, "Temperature decoded: $temp °C")
                     latestTemp = temp
                 }
