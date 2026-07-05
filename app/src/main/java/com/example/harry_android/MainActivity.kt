@@ -31,6 +31,8 @@ import com.example.harry_android.ui.connection.BleConnectionViewModel
 import com.example.harry_android.ui.connection.ScanBottomSheet
 import com.example.harry_android.ui.sensor.SensorScreen
 import com.example.harry_android.ui.theme.Harry_androidTheme
+import com.example.api.WeatherBriefRoute
+import com.example.weatherbrief.impl.WeatherBriefScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -85,11 +87,15 @@ class MainActivity : ComponentActivity() {
                             composable(route = "menu") {
                                 MenuScreen(
                                     onNavigationToBook = { navController.navigate("book") },
-                                    onNavigationToHome = { navController.navigate("home") }
+                                    onNavigationToHome = { navController.navigate("home") },
+                                    onNavigationToWeatherBrief = { navController.navigate(WeatherBriefRoute.ROUTE) }
                                 )
                             }
                             composable(route = "book") {
                                 BookScreen()
+                            }
+                            composable(WeatherBriefRoute.ROUTE) {
+                                WeatherBriefScreen()
                             }
                             composable("sensor/{deviceAddress}") {
                                 SensorScreen(navController = navController)

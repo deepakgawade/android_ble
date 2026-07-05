@@ -28,6 +28,7 @@ Instead of one giant setup function, you split into logical groups:
 |---|---|
 | `AppModule` | BLE infrastructure (GattDecoder, BleSessionManager, …) |
 | `NetworkModule` | HTTP infrastructure (OkHttpClient, Retrofit, ApiService, …) |
+| `AviationModule` | Aviation weather DI wiring (currently empty — no providers added yet) |
 
 **Flutter analogy:**
 ```dart
@@ -189,6 +190,15 @@ abstract class NetworkModule {
 |---|---|
 | Only `@Provides` (external libs, builders) | `object` |
 | Has at least one `@Binds` (interface → impl) | `abstract class` + `companion object` |
+| No providers yet (scaffold) | `object` — an empty module is still valid; switch to `abstract class` the moment a `@Binds` is added |
+
+**Real example in this codebase — `AviationModule`:**
+```kotlin
+@Module
+@InstallIn(SingletonComponent::class)
+object AviationModule   // empty for now — no @Provides, no @Binds
+```
+It's `object`, not `abstract class`, purely because it has *no* members yet. The choice isn't locked in — it only needs to flip to `abstract class` if/when a `@Binds` (e.g. binding an `AviationWeatherRepository` interface to its impl) is added. Until then, `object` is correct and simplest.
 
 ---
 

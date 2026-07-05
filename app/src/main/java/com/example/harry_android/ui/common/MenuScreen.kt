@@ -18,7 +18,11 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MenuScreen(onNavigationToHome:()->Unit,onNavigationToBook: () -> Unit){
+fun MenuScreen(
+    onNavigationToHome:()->Unit,
+    onNavigationToBook: () -> Unit,
+    onNavigationToWeatherBrief: () -> Unit,
+){
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Harry Potter App") }) }
@@ -34,6 +38,11 @@ fun MenuScreen(onNavigationToHome:()->Unit,onNavigationToBook: () -> Unit){
             Button(onClick = onNavigationToBook, modifier = Modifier.fillMaxWidth()) {
                 Text("Books")
             }
+            Spacer(Modifier.height(16.dp))
+
+            Button(onClick = onNavigationToWeatherBrief, modifier = Modifier.fillMaxWidth()) {
+                Text("Weather Brief")
+            }
 
 
         }
@@ -47,6 +56,7 @@ fun MenuScreen(onNavigationToHome:()->Unit,onNavigationToBook: () -> Unit){
 private fun MenuScreenPreview() {
     MenuScreen(
         onNavigationToHome = {},
-        onNavigationToBook = {}
+        onNavigationToBook = {},
+        onNavigationToWeatherBrief = {}
     )
 }

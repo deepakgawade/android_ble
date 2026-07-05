@@ -43,6 +43,12 @@ android {
 }
 
 dependencies {
+
+    implementation(project(":core:model"))
+    implementation(project(":core:network"))
+    implementation(project(":core:data"))
+    implementation(project(":feature:weatherbrief:api"))
+    implementation(project(":feature:weatherbrief:impl"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
